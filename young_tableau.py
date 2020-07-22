@@ -131,19 +131,6 @@ def n_tabs(partition):
     fd = FerrersDiagram.from_partition(partition)
     return fd.n_tabs()
 
-def wreath_dim(parts):
-    '''
-    parts: list/tuple of length 3 of parititions
-    alpha[i] = sum(parts[i]) for i = 0, 1, 2
-    Returns the size of the irrep of S_alpha indexed by this list of partitions
-    '''
-    output = 1
-    for p in parts:
-        if len(p) == 0:
-            continue
-        output *= n_tabs(p)
-    return output
-
 def make_young_tableau(shape, vals):
     '''
     shape: tuple of row size of ferrers diagram. Sum of tuple elements is n

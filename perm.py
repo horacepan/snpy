@@ -6,47 +6,16 @@ from itertools import permutations
 import time
 
 SN_CACHE = {}
-SN_IDMAP = {}
 HITS = {'hits': 0}
 SN_TABLE = {} # n -> numpy array
 SN_INV = {}
-def conjugate(x, g):
-    '''
-    x: Perm2 object
-    g: Perm2 object
-    returns x conjugated by g
-    '''
-    return g.inv() * x * g
 
-class ProdPerm:
-    def __init__(self, *perms):
-        '''
-        perms: list of Perm2 objects
-        '''
-        self.perms = perms
-        self.tup_rep = self.get_tup_rep()
-
-    def __mul__(self, other):
-        res = [a*b for a,b in zip(self.perms, other.perms)]
-        return ProdPerm(*res)
-
-    def get_tup_rep(self):
-        return tuple(p.tup_rep for p in self.perms)
-
-    def __repr__(self):
-        return str(self.tup_rep)
-
-    def inv(self):
-        res = [p.inv() for p in self.perms]
-        return ProdPerm(*res)
-
-class Perm2:
+class Perm:
     def __init__(self, p_map, n, tup_rep=None, cyc_decomp=None):
         self.size = n
         self._map = self._filled_map(p_map, self.size)
         self.cycle_decomposition = self._cycle_decomposition() if cyc_decomp is None else cyc_decomp
         self.tup_rep = self.get_tup_rep() if tup_rep is None else tup_rep
-        self._id = None
 
         # add permutation to the cache
         if self.size in SN_CACHE:
@@ -71,7 +40,7 @@ class Perm2:
     @staticmethod
     def eye(size):
         p_map = {i:i for i in range(1, size+1)}
-        return Perm2(p_map, size)
+        return Perm(p_map, size)
 
     @staticmethod
     def from_tup(tup):
@@ -83,7 +52,7 @@ class Perm2:
             SN_CACHE[len(tup)] = {}
 
         _dict = {idx+1: val for idx, val in enumerate(tup)}
-        perm = Perm2(_dict, len(tup), tup)
+        perm = Perm(_dict, len(tup), tup)
 
         # store the thing
         SN_CACHE[len(tup)][perm.tup_rep] = perm
@@ -97,7 +66,7 @@ class Perm2:
             for idx, val in enumerate(cyc):
                 nxt_val = cyc[(idx + 1) % len(cyc)]
                 lst[val - 1] = nxt_val
-        return Perm2.from_tup(tuple(lst))
+        return Perm.from_tup(tuple(lst))
 
     @staticmethod
     def swap(n, a, b):
@@ -105,7 +74,7 @@ class Perm2:
         tup[a - 1] = b
         tup[b - 1] = a
         tup = tuple(tup)
-        return Perm2.from_tup(tup)
+        return Perm.from_tup(tup)
 
     @staticmethod
     def cont_cycle(n, a, b):
@@ -115,7 +84,7 @@ class Perm2:
         cyc[b-1] = a
         cyc = tuple(cyc)
 
-        return Perm2.from_tup(cyc)
+        return Perm.from_tup(cyc)
 
     @staticmethod
     def from_trans(trans, n):
@@ -123,7 +92,7 @@ class Perm2:
         lst[trans[0] - 1] = trans[1]
         lst[trans[1] - 1] = trans[0]
         tup = tuple(lst)
-        return Perm2.from_tup(tup)
+        return Perm.from_tup(tup)
 
     @staticmethod
     def from_cycle_decomp(decomp_lst):
@@ -133,7 +102,7 @@ class Perm2:
             for idx, val in enumerate(cyc):
                 nxt_val = cyc[(idx + 1) % len(cyc)]
                 output_lst[val - 1] = nxt_val
-        return Perm2.from_tup(tuple(output_lst))
+        return Perm.from_tup(tuple(output_lst))
 
     def __call__(self, x):
         return self._map.get(x, x)
@@ -152,12 +121,7 @@ class Perm2:
             raise Exception('Currently cant mult two perms of diff sizes!')
 
         new_tup = tuple(g[h[i] - 1] for i in range(self.size))
-        return Perm2.from_tup(new_tup)
-
-    # this is actually slower than the other __mul__
-    #def __mul__2(self, other):
-    #    prod_id = SN_TABLE[self.size][self.id, other.id] # this maps to an id
-    #    return SN_IDMAP[self.size][prod_id]
+        return Perm.from_tup(new_tup)
 
     def __len__(self):
         return self.size
@@ -194,10 +158,6 @@ class Perm2:
     def to_tup(self):
         return tuple(self._map[i] for i in range(1, self.size+1))
 
-    #def inv2(self):
-    #    perm_id = SN_INV[self.size][self.id]
-    #    return SN_IDMAP[self.size][perm_id]
-
     def inv(self):
         rev_lst = [0] * self.size
         for idx, v in enumerate(self.tup_rep):
@@ -210,86 +170,24 @@ class Perm2:
             return SN_CACHE[self.size][rev_tup]
         else:
             rev_map = {v: k for k, v in self._map.items()}
-            return Perm2(rev_map, self.size)
+            return Perm(rev_map, self.size)
         rev_map = {v: k for k, v in self._map.items()}
-        return Perm2(rev_map, self.size)
+        return Perm(rev_map, self.size)
 
-    @property
-    def id(self):
-        return self._id
+    def mat(self):
+        pmat = np.zeros((self.size, self.size))
+        for j in range(self.size):
+            i = self.tup_rep[j] - 1
+            pmat[i, j] = 1
 
-    def set_id(self, _id):
-        self._id = _id
- 
-def sn(n, prefix='/local/hopan/'):
-    # load mult table?
-    if n in SN_CACHE and len(SN_CACHE[n]) == np.math.factorial(n):
-        return list(SN_CACHE[n].values())
+        return pmat
 
+def sn(n):
     perm_tups = permutations(range(1, n+1))
-    perms = [Perm2.from_tup(t) for t in perm_tups]
-    #SN_IDMAP[n] = {}
-    for idx, p in enumerate(perms):
-        p.set_id(idx)
-        #SN_IDMAP[n][idx] = p
-
-    SN_CACHE[n] = {p.tup_rep: p for p in perms}
-    #print('using mul cache')
-    #print('loading: {}'.format(prefix + 's{}_table.npy'.format(n)))
-    #SN_TABLE[n] = np.load(prefix + 's{}_table.npy'.format(n))
-    #SN_INV[n] = np.load(prefix + 's{}_inv.npy'.format(n))
-    #print('done loading: {}'.format(prefix + 's{}_table.npy'.format(n)))
-
-    return perms
-
-'''
-def test():
-    for n in range(2,11):
-        print('n = {}'.format(n))
-        f = lambda x, y: x*y
-        start = time.time()
-        for i in range(10000):
-            ps = [Perm([(i, i+1)]) for i in range(1, n+1)]
-            p = reduce(f, ps)
-        end = time.time()
-        print('Time for orginal perm: {:.2f}'.format(end - start))
-
-        start =time.time()
-        for i in range(10000):
-            ps = [Perm2({i:i+1, i+1:i}, n) for i in range(1, n+1)]
-            p = reduce(f, ps)
-        end = time.time()
-        print('Time for perm with maps: {:.2f}'.format(end - start))
-
-        print('=' * 10)
-    #start = time.time()
-    #for i in range(10000):
-    #    ps = [Perm([(i, i+1)]) for i in range(1, n+1)]
-    #    p = reduce(f, ps)
-    #end = time.time()
-    #print('Time for orginal perm 2nd time: {:.2f}'.format(end - start))
-'''
-
-def mult_table(n, inv_save, table_save):
-    _sn = sn(n)
-    table = np.zeros((len(_sn), len(_sn)), dtype=np.uint16)
-    inv_table = np.zeros(len(_sn), dtype=np.uint16)
-    for idx, p in enumerate(_sn):
-        p.set_id(idx)
-
-    for i, p in enumerate(_sn):
-        inv_table[i] = p.inv().id
-
-        for j, k in enumerate(_sn):
-            table[i, j] = (p * k).id
-            table[j, i] = (k * p).id
-
-    np.save(inv_save.format(n), inv_table)
-    np.save(table_save, table)
+    return [Perm.from_tup(p) for p in perm_tups]
 
 if __name__ == '__main__':
-    n = int(sys.argv[1])
-    start = time.time()
-    mult_table(n)
-    end = time.time()
-    print('s{} | Elapsed: {:.2f}'.format(n, end - start))
+    s4 = sn(4)
+    print(s4)
+    x = Perm.from_tup((2,3,4,5,1))
+    print(x.mat())
