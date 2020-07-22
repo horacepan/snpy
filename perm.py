@@ -9,16 +9,15 @@ class Perm:
     def __init__(self, lst_map):
         self.size = len(lst_map)
         self._lst_map = lst_map
-        self.tup_rep = tuple(self._lst_map)
-        self.cycle_decomposition = self._cycle_decomposition()
+        self._tup_rep = tuple(self._lst_map)
+        self._cycle_decomposition = self.compute_cycle_decomposition()
 
     @staticmethod
     def eye(size):
         return Perm([i for i in range(1, size + 1)])
 
     @staticmethod
-    def from_cycle_decomp(decomp_lst):
-        n = sum(len(x) for x in decomp_lst)
+    def from_cycle_decomp(decomp_lst, n):
         lst = [i for i in range(1, n+1)]
         for cyc in decomp_lst:
             for idx, val in enumerate(cyc):
@@ -44,7 +43,11 @@ class Perm:
 
     @property
     def tup(self):
-        return self.tup_rep
+        return self._tup_rep
+
+    @property
+    def cycle_decomposition(self):
+        return self._cycle_decomposition
 
     def inv(self):
         inv_map = [self._lst_map.index(i + 1) + 1 for i in range(self.size)]
@@ -85,7 +88,7 @@ class Perm:
     def __eq__(self, other):
         return isinstance(self, type(other)) and self._lst_map == other._lst_map
 
-    def _cycle_decomposition(self):
+    def compute_cycle_decomposition(self):
         cyc_decomp = []
         curr_cycle = []
         seen = set()
