@@ -1,5 +1,4 @@
 from utils import *
-from young_tableau import FerrersDiagram, get_minus_partition
 import time
 import pdb
 import copy
@@ -138,34 +137,6 @@ def pp(tableaux):
         rowstr = fmt.format(*row)
         print(rowstr)
 
-def check_eq(yt, ft):
-    for ry, rf in zip(yt.contents, ft.contents):
-        if tuple(ry) != rf:
-            return False
-    return True
-
-def branch_down(partition):
-    '''
-    Return a list of FerrersDiagrams of all the partitions
-    you'd get if you removed a corner node
-    '''
-    if sum(partition) == 1:
-        return []
-
-    branches = []
-    for idx in range(len(partition)):
-        # can branch if partition[idx] - 1 >= partition[idx + 1]
-        next_row_len = 0
-        if idx != len(partition) - 1:
-            next_row_len = partition[idx + 1]
-        if partition[idx] - 1 >= next_row_len:
-            # valid
-            new_partition = get_minus_partition(partition, idx)
-            branches.append(new_partition)
-
-    return branches
-
-
 if __name__== '__main__':
     st = time.time()
     part = (28, 1, 1)
@@ -187,4 +158,4 @@ if __name__== '__main__':
     tot += sort_time
     print('Num sty', len(yts))
     print(f'Elapsed: {tot:.2f} | Gen Shapes: {sty_time:.2f}s | Gen YT Obj: {yt_time:.2f}s')
-    phaperint('Sort time: {:.2f}s'.format(sort_time))
+    print('Sort time: {:.2f}s'.format(sort_time))

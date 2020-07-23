@@ -1,20 +1,18 @@
 import numpy as np
-from yor import yor
-from young_tableau import FerrersDiagram
 from scipy.sparse import identity, csr_matrix
+
 from perm import *
 from utils import hook_length, cycle_to_adj_transpositions
 from tableau import compute_syt
 
-YOR_TRANS_CACHE = {}
-YOR_TRANS_SPARSE_CACHE = {}
-class YorIrrep:
+class SnIrrep:
     TRANS_CACHE = {}
+    TRANS_SPARSE_CACHE = {}
     def __init__(self, partition, fmt='dense'):
-        if partition not in YOR_TRANS_CACHE:
-            YOR_TRANS_CACHE[partition] = {}
-        if partition not in YOR_TRANS_SPARSE_CACHE:
-            YOR_TRANS_SPARSE_CACHE[partition] = {}
+        if partition not in SnIrrep.TRANS_CACHE:
+            SnIrrep.TRANS_CACHE[partition] = {}
+        if partition not in SnIrrep.TRANS_SPARSE_CACHE:
+            SnIrrep.TRANS_SPARSE_CACHE[partition] = {}
 
         self.partition = partition
         self.n = sum(partition)
@@ -69,8 +67,8 @@ class YorIrrep:
                 raise Exception('Only allowed formats are sparse(csr) and dense(np).')
 
     def compute_trans(self, a, b):
-        if self.partition in YOR_TRANS_CACHE and (a, b) in YOR_TRANS_CACHE[self.partition]:
-            return YOR_TRANS_CACHE[self.partition][(a, b)]
+        if self.partition in SnIrrep.TRANS_CACHE and (a, b) in SnIrrep.TRANS_CACHE[self.partition]:
+            return SnIrrep.TRANS_CACHE[self.partition][(a, b)]
 
         size = self._dim
         mat = np.zeros((size, size))
@@ -88,12 +86,12 @@ class YorIrrep:
                 mat[i, j] = np.sqrt(1 - (1. / dist) ** 2)
                 mat[j, i] = mat[i, j]
 
-        YOR_TRANS_CACHE[self.partition][(a, b)] = mat
+        SnIrrep.TRANS_CACHE[self.partition][(a, b)] = mat
         return mat
 
     def compute_trans_sp(self, a, b):
-        if self.partition in YOR_TRANS_SPARSE_CACHE and (a, b) in YOR_TRANS_SPARSE_CACHE[self.partition]:
-            return YOR_TRANS_SPARSE_CACHE[self.partition][(a, b)]
+        if self.partition in SnIrrep.TRANS_SPARSE_CACHE and (a, b) in SnIrrep.TRANS_SPARSE_CACHE[self.partition]:
+            return SnIrrep.TRANS_SPARSE_CACHE[self.partition][(a, b)]
 
         rows = []
         cols = []
@@ -121,26 +119,18 @@ class YorIrrep:
                 data.extend([ij_val, ji_val])
 
         sp_mat = csr_matrix((data, (rows, cols)), shape=(self.dim, self.dim))
-        YOR_TRANS_SPARSE_CACHE[self.partition][(a, b)] = sp_mat
+        SnIrrep.TRANS_SPARSE_CACHE[self.partition][(a, b)] = sp_mat
         return sp_mat
 
 if __name__ == '__main__':
     partition = (4, 1)
     n = sum(partition)
 
-    irrep = YorIrrep(partition, fmt='dense')
-    irrep_sp = YorIrrep(partition, fmt='sparse')
+    irrep = SnIrrep(partition, fmt='dense')
+    irrep_sp = SnIrrep(partition, fmt='sparse')
 
     trans = [(1,2), (2,3), (3,4), (4,5)]
     for tr in trans:
         m1 = irrep.compute_trans(*tr)
         m2 = irrep_sp.compute_trans_sp(*tr).toarray()
         print(np.allclose(m1, m2))
-
-    perm = Perm.cycle(1, 4, n)
-    m1 = irrep(perm)
-    m2 = irrep(perm.inv())
-    y1 = yor(FerrersDiagram(partition), perm)
-    y2 = yor(FerrersDiagram(partition), perm.inv())
-    print(np.allclose(m1, y1))
-    print(np.allclose(m2, y2))

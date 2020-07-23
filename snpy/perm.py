@@ -1,9 +1,7 @@
-import numpy as np
 import sys
-import pdb
-from functools import reduce
 from itertools import permutations
-import time
+
+import numpy as np
 
 class Perm:
     def __init__(self, lst_map):
