@@ -17,6 +17,6 @@ from snpy.sn_irrep import SnIrrep
 
 partition = (4, 1)
 rho = SnIrrep(partition, fmt='dense')
-g = Perm.cont_cycle(1, 3, 5)
+g = Perm.cycle(1, 3, 5)
 g_rep = rho(g)
 ```
