@@ -26,11 +26,11 @@ class Perm:
         return Perm(lst)
 
     @staticmethod
-    def cont_cycle(st, end, n):
+    def cycle(st, end, n):
         cyc = [i for i in range(1, n+1)]
         for i in range(st, end):
             cyc[i - 1] = i + 1
-        cyc[b-1] = a
+        cyc[end - 1] = st
 
         return Perm(cyc)
 

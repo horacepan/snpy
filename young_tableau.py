@@ -5,7 +5,6 @@ import time
 import itertools
 import numpy as np
 from functools import total_ordering
-from utils import check_memory
 
 FERRERS_CACHE = {}
 def swap(x, i, j):
