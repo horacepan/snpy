@@ -1,17 +1,20 @@
 import numpy as np
-from YOR import yor
+from yor import yor
 from young_tableau import FerrersDiagram
-from scipy.sparse import identity
+from scipy.sparse import identity, csr_matrix
 from perm import *
 from utils import hook_length, cycle_to_adj_transpositions
 from tableau import compute_syt
 
 YOR_TRANS_CACHE = {}
-class YOR:
+YOR_TRANS_SPARSE_CACHE = {}
+class YorIrrep:
     TRANS_CACHE = {}
     def __init__(self, partition, fmt='dense'):
         if partition not in YOR_TRANS_CACHE:
             YOR_TRANS_CACHE[partition] = {}
+        if partition not in YOR_TRANS_SPARSE_CACHE:
+            YOR_TRANS_SPARSE_CACHE[partition] = {}
 
         self.partition = partition
         self.n = sum(partition)
@@ -23,7 +26,7 @@ class YOR:
 
         if self._fmt == 'sparse':
             self._trans_irrep = self.compute_trans_sp
-        elif self._fmt == 'sparse':
+        elif self._fmt == 'dense':
             self._trans_irrep = self.compute_trans
         else:
             pass
@@ -45,7 +48,11 @@ class YOR:
 
         for cycle in perm.cycle_decomposition:
             for t in cycle_to_adj_transpositions(cycle, self.n):
-                mat = self.compute_trans_sp(*t) if self._fmt == 'sparse' else self.compute_trans(*t)
+                if self._fmt == 'sparse':
+                    mat = self.compute_trans_sp(*t)
+                elif self._fmt == 'dense':
+                    mat = self.compute_trans(*t)
+
                 irrep = irrep.dot(mat)
 
         return irrep
@@ -62,40 +69,38 @@ class YOR:
                 raise Exception('Only allowed formats are sparse(csr) and dense(np).')
 
     def compute_trans(self, a, b):
-        if self.partition in YOR_TRANS_CACHE and (a, b) in YOR_TRANS_CACHE[partition]:
+        if self.partition in YOR_TRANS_CACHE and (a, b) in YOR_TRANS_CACHE[self.partition]:
             return YOR_TRANS_CACHE[self.partition][(a, b)]
 
         size = self._dim
-        rep = np.zeros((size, size))
+        mat = np.zeros((size, size))
 
         for tab in self.tableaux:
             other = tab.transpose(a, b)
             dist = tab.ax_dist(a, b)
             i = tab.index
-            rep[i, i] = 1. / dist
-
+            mat[i, i] = 1. / dist
             if other is not None:
                 j = other.index
-                rep[i, j] = np.sqrt(1 - (1. / dist) ** 2)
-                rep[j, i] = rep[i, j]
-                rep[j, j] = 1. / other.ax_dist(a, b)
+                if j < i:
+                    continue
 
-        try:
-            YOR_TRANS_CACHE[self.partition][(a, b)] = rep
-        except:
-            pdb.set_trace()
-        return rep
+                mat[i, j] = np.sqrt(1 - (1. / dist) ** 2)
+                mat[j, i] = mat[i, j]
+
+        YOR_TRANS_CACHE[self.partition][(a, b)] = mat
+        return mat
 
     def compute_trans_sp(self, a, b):
-        if self.partition in YOR_TRANS_CACHE and (a, b) in YOR_TRANS_CACHE[partition]:
-            return YOR_TRANS_CACHE[self.partition][(a, b)]
+        if self.partition in YOR_TRANS_SPARSE_CACHE and (a, b) in YOR_TRANS_SPARSE_CACHE[self.partition]:
+            return YOR_TRANS_SPARSE_CACHE[self.partition][(a, b)]
 
         rows = []
         cols = []
         data = []
         for tab in self.tableaux:
-            other = tab.transpose(transposition)
-            dist = tab.ax_dist(*transposition)
+            other = tab.transpose(a, b)
+            dist = tab.ax_dist(a, b)
             i = tab.index
 
             rows.append(i)
@@ -104,22 +109,34 @@ class YOR:
 
             if other is not None:
                 j = other.index
+                if j < i:
+                    # should have already computed this
+                    continue
 
                 ij_val = ji_val = np.sqrt(1 - (1. / dist) ** 2)
-                jj_val = 1. / other.ax_dist(*transposition)
+                #jj_val = 1. / other.ax_dist(a, b)
 
-                rows.extend([i, j, j])
-                cols.extend([j, i, j])
-                data.extend([ij_val, ji_val, jj_val])
+                rows.extend([i, j])
+                cols.extend([j, i])
+                data.extend([ij_val, ji_val])
 
-        sp_mat = csr_matrix(data, (rows, cols), shape=(self.dim, self.dim))
+        sp_mat = csr_matrix((data, (rows, cols)), shape=(self.dim, self.dim))
+        YOR_TRANS_SPARSE_CACHE[self.partition][(a, b)] = sp_mat
         return sp_mat
 
 if __name__ == '__main__':
     partition = (4, 1)
     n = sum(partition)
 
-    irrep = YOR(partition, fmt='dense')
+    irrep = YorIrrep(partition, fmt='dense')
+    irrep_sp = YorIrrep(partition, fmt='sparse')
+
+    trans = [(1,2), (2,3), (3,4), (4,5)]
+    for tr in trans:
+        m1 = irrep.compute_trans(*tr)
+        m2 = irrep_sp.compute_trans_sp(*tr).toarray()
+        print(np.allclose(m1, m2))
+
     perm = Perm.cycle(1, 4, n)
     m1 = irrep(perm)
     m2 = irrep(perm.inv())

@@ -49,16 +49,17 @@ def yor(ferrers, permutation, use_cache=True):
     Returns: an irrep matrix of size d x d, where d is the number of standard tableaux of the
     given FerrersDiagram shape
     '''
-    if (ferrers, permutation.tup_rep) in YOR_CACHE:
-        return YOR_CACHE[(ferrers.partition, permutation.tup_rep)]
+    if (ferrers, permutation.tup) in YOR_CACHE:
+        return YOR_CACHE[(ferrers.partition, permutation.tup)]
 
     if all(map(lambda x: len(x) <= 1, permutation.cycle_decomposition)):
         # TODO: make a static/class function for this
         n = len(FerrersDiagram.TABLEAUX_CACHE[ferrers.partition])
-        YOR_CACHE[(ferrers.partition, permutation.tup_rep)] = np.eye(n)
-        return YOR_CACHE[(ferrers.partition, permutation.tup_rep)]
+        YOR_CACHE[(ferrers.partition, permutation.tup)] = np.eye(n)
+        return YOR_CACHE[(ferrers.partition, permutation.tup)]
 
     res = None
+    all_ts = []
     for cycle in permutation.cycle_decomposition:
         ts = []
         for t in cycle_to_adj_transpositions(cycle, ferrers.size):
@@ -68,8 +69,10 @@ def yor(ferrers, permutation, use_cache=True):
                 res = y
             else:
                 res = res.dot(y)
+        all_ts.append(ts)
+
     if use_cache:
-        YOR_CACHE[(ferrers.partition, permutation.tup_rep)] = res
+        YOR_CACHE[(ferrers.partition, permutation.tup)] = res
     return res
 
 def yor_trans(ferrers, transposition):
