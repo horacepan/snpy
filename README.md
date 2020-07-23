@@ -1,11 +1,16 @@
-# snpy
+## snpy
 SnPy is a simple library for computing irreducible representation matrices (using Young's orthogonal representation) of the the symmetric group.
 
 ## Requirements
 - numpy
 - scipy
 
-Sample Usage
+## Installation
+```
+python setup.py install
+```
+
+## Sample Usage
 ```
 from snpy.perm import Perm
 from snpy.sn_irrep import SnIrrep
