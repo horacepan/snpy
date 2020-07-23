@@ -1,6 +1,8 @@
 import random
 import unittest
-from perm import Perm, sn
+
+#from .context import snpy
+from snpy.perm import Perm, sn
 
 class TestPerm(unittest.TestCase):
     def test_eye(self):

@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.sparse import identity, csr_matrix
 
-from perm import *
-from utils import hook_length, cycle_to_adj_transpositions
-from tableau import compute_syt
+from .perm import *
+from .utils import hook_length, cycle_to_adj_transpositions
+from .tableau import compute_syt
 
 class SnIrrep:
     TRANS_CACHE = {}

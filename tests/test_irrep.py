@@ -3,10 +3,10 @@ import random
 import unittest
 
 import numpy as np
-from perm import Perm, sn
-from sn_irrep import YorIrrep
+from snpy.perm import Perm, sn
+from snpy.sn_irrep import SnIrrep
 
-class TestYor(unittest.TestCase):
+class TestSnIrrep(unittest.TestCase):
     def test_yor_dense(self):
         partition = (4, 2, 1, 1)
         s8 = sn(8)
@@ -15,13 +15,13 @@ class TestYor(unittest.TestCase):
         h = random.choice(s8)
         gh = g * h
 
-        rho = YorIrrep(partition, 'dense')
+        rho = SnIrrep(partition, 'dense')
         gd = rho(g)
         hd = rho(h)
         ghd = rho(gh)
         self.assertTrue(np.allclose(gd.dot(hd), ghd))
 
-        rho_sp = YorIrrep(partition, 'sparse')
+        rho_sp = SnIrrep(partition, 'sparse')
         gsp = rho_sp(g)
         hsp = rho_sp(h)
         ghsp = rho_sp(gh)
@@ -35,7 +35,7 @@ class TestYor(unittest.TestCase):
         partition = (4, 3, 1)
         s8 = sn(8)
 
-        rho = YorIrrep(partition, 'dense')
+        rho = SnIrrep(partition, 'dense')
         g = random.choice(s8)
         gmat = rho(g)
         mat_inv = np.linalg.inv(gmat)
@@ -45,7 +45,7 @@ class TestYor(unittest.TestCase):
 
     def test_s3(self):
         partition = (3, 1)
-        rho = YorIrrep(partition, fmt='dense')
+        rho = SnIrrep(partition, fmt='dense')
         p12 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
         p23 = np.array([[0.5, np.sqrt(3)/2., 0], [np.sqrt(3)/2., -0.5, 0], [0, 0, 1]])
         p34 = np.array([[1, 0, 0], [0, 1./3., np.sqrt(8)/3], [0, np.sqrt(8)/3, -1./3.]])
