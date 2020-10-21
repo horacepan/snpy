@@ -18,5 +18,6 @@ from snpy.sn_irrep import SnIrrep
 partition = (4, 1)
 rho = SnIrrep(partition, fmt='dense')
 g = Perm.cycle(1, 3, 5)
-g_rep = rho(g)
+print(rho(g))
 ```
+See the sample [Jupyter notebook](https://github.com/horacepan/snpy/blob/master/example.ipynb) for more details on how to generate various permutations and their corresponding irrep matrices.
