@@ -28,7 +28,7 @@ def hook_length(partition):
             cl = len([r for r in partition[idx+1:] if r > _idx])
             denominator *= (rl + cl)
 
-    return numerator / denominator
+    return numerator // denominator
 
 def cycle_to_adj_transpositions(cyc, n):
     '''
