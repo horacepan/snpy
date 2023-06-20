@@ -1,5 +1,5 @@
 ## snpy
-SnPy is a simple library for computing irreducible representation matrices (using Young's orthogonal representation) of the the symmetric group.
+SnPy is a simple library for computing irreducible representation matrices (using Young's orthogonal representation) of the symmetric group.
 
 ## Requirements
 - numpy
